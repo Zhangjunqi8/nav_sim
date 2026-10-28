@@ -1,0 +1,64 @@
+cmake_minimum_required(VERSION 3.16)
+project(nav_sim)
+
+# ---- ROS2 / Gazebo (Classic) ----
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(gazebo_dev REQUIRED)
+find_package(gazebo_ros REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(vision_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(gazebo_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+# ---- Dynamic obstacle path plugin (ported from Intent-MPC uav_simulator, MIT) ----
+add_library(obstacle_path_plugin SHARED
+  src/obstacle_path_plugin.cpp
+)
+target_include_directories(obstacle_path_plugin PUBLIC
+  include
+)
+target_link_libraries(obstacle_path_plugin
+  ${GAZEBO_LIBRARIES}
+  Eigen3::Eigen
+)
+ament_target_dependencies(obstacle_path_plugin
+  rclcpp
+  geometry_msgs
+  sensor_msgs
+  std_msgs
+  nav_msgs
+  gazebo_ros
+)
+target_compile_features(obstacle_path_plugin PUBLIC cxx_std_17)
+
+# ---- Ground-truth publisher (/model_states -> /dynamic_obstacles/ground_truth) ----
+add_executable(ground_truth_publisher
+  src/ground_truth_publisher.cpp
+)
+ament_target_dependencies(ground_truth_publisher
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  gazebo_msgs
+)
+target_compile_features(ground_truth_publisher PUBLIC cxx_std_17)
+
+# ---- Install ----
+install(TARGETS obstacle_path_plugin ground_truth_publisher
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+install(DIRECTORY launch worlds models urdf config
+  DESTINATION share/${PROJECT_NAME}
+)
+
+ament_package()

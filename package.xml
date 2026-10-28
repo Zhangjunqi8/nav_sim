@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>nav_sim</name>
+  <version>0.1.0</version>
+  <description>
+    Stack-agnostic 2D ground-robot simulation platform for dynamic-obstacle navigation.
+    Provides a differential-drive AGV, depth/lidar sensors, and path-following dynamic
+    obstacles (ported from Intent-MPC's uav_simulator). Publishes only standard ROS2
+    interfaces so any navigation stack can consume it.
+  </description>
+  <maintainer email="dev@example.com">nav_sim developers</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>gazebo_ros</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>std_msgs</depend>
+  <depend>vision_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>eigen</depend>
+  <depend>gazebo_dev</depend>
+  <depend>gazebo_plugins</depend>
+  <depend>gazebo_msgs</depend>
+  <depend>launch</depend>
+  <depend>launch_ros</depend>
+  <depend>xacro</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>joint_state_publisher</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <world name="square_dynamic">
+    <!-- Ground plane -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Static obstacles: 2D walls for the AGV -->
+    <model name="wall_north">
+      <pose>0 8 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>16.0 0.4 0.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>16.0 0.4 0.5</size></box></geometry></visual>
+      </link>
+    </model>
+    <model name="wall_south">
+      <pose>0 -8 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>16.0 0.4 0.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>16.0 0.4 0.5</size></box></geometry></visual>
+      </link>
+    </model>
+    <model name="wall_east">
+      <pose>8 0 0.25 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>16.0 0.4 0.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>16.0 0.4 0.5</size></box></geometry></visual>
+      </link>
+    </model>
+    <model name="wall_west">
+      <pose>-8 0 0.25 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>16.0 0.4 0.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>16.0 0.4 0.5</size></box></geometry></visual>
+      </link>
+    </model>
+
+    <!-- Static box obstacle in the middle -->
+    <model name="static_box">
+      <pose>0 0 0.25 0 0 0.785398</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>1.0 1.0 0.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>1.0 1.0 0.5</size></box></geometry></visual>
+      </link>
+    </model>
+
+    <!-- Dynamic obstacles: people walking along paths -->
+    <model name="person1">
+      <pose>-6 6 0 0 0 0</pose>
+      <link name="link">
+        <collision name="col">
+          <pose>0 0 0.9 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.3</radius><length>1.8</length></cylinder>
+          </geometry>
+        </collision>
+        <visual name="vis">
+          <pose>0 0 1.0 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.3</radius><length>1.8</length></cylinder>
+          </geometry>
+        </visual>
+      </link>
+      <plugin name="obstacle_motion" filename="libobstacle_path_plugin.so">
+        <loop>1</loop>
+        <velocity>0.6</velocity>
+        <angular_velocity>0.8</angular_velocity>
+        <path>
+          <waypoint>-6 6 0</waypoint>
+          <waypoint> 2 6 0</waypoint>
+          <waypoint> 2 2 0</waypoint>
+          <waypoint>-6 2 0</waypoint>
+        </path>
+      </plugin>
+    </model>
+
+    <model name="person2">
+      <pose>6 -6 0 0 0 0</pose>
+      <link name="link">
+        <collision name="col">
+          <pose>0 0 0.9 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.3</radius><length>1.8</length></cylinder>
+          </geometry>
+        </collision>
+        <visual name="vis">
+          <pose>0 0 1.0 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.3</radius><length>1.8</length></cylinder>
+          </geometry>
+        </visual>
+      </link>
+      <plugin name="obstacle_motion" filename="libobstacle_path_plugin.so">
+        <loop>0</loop>
+        <velocity>0.6</velocity>
+        <angular_velocity>0.8</angular_velocity>
+        <path>
+          <waypoint>6 -6 0</waypoint>
+          <waypoint>-6 -6 0</waypoint>
+        </path>
+      </plugin>
+    </model>
+
+    <model name="person3">
+      <pose>0 4 0 0 0 0</pose>
+      <link name="link">
+        <collision name="col">
+          <pose>0 0 0.9 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.3</radius><length>1.8</length></cylinder>
+          </geometry>
+        </collision>
+        <visual name="vis">
+          <pose>0 0 1.0 0 0 0</pose>
+          <geometry>
+            <cylinder><radius>0.3</radius><length>1.8</length></cylinder>
+          </geometry>
+        </visual>
+      </link>
+      <plugin name="obstacle_motion" filename="libobstacle_path_plugin.so">
+        <loop>0</loop>
+        <velocity>0.4</velocity>
+        <angular_velocity>0.8</angular_velocity>
+        <path>
+          <waypoint>-4 4 0</waypoint>
+          <waypoint> 4 -4 0</waypoint>
+        </path>
+      </plugin>
+    </model>
+  </world>
+</sdf>
