@@ -16,15 +16,26 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
+from launch.actions import SetEnvironmentVariable
+from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
     nav_sim_share = FindPackageShare('nav_sim')
     agv_xacro = PathJoinSubstitution([nav_sim_share, 'urdf', 'agv', 'agv.urdf.xacro'])
 
+    # Person / corridor / floorplan models are referenced via model:// URIs inside
+    # the worlds. Expose nav_sim/models to Gazebo without clobbering system defaults.
+    _models_dir = os.path.join(get_package_share_directory('nav_sim'), 'models')
+    _gmp = os.environ.get('GAZEBO_MODEL_PATH', '')
+    _gmp = (_gmp + ':' + _models_dir) if _gmp else _models_dir
     return LaunchDescription([
+        SetEnvironmentVariable('GAZEBO_MODEL_PATH', _gmp),
+
         DeclareLaunchArgument('world', default_value='square_dynamic.world',
-                              description='World file under worlds/'),
+                              description='World file under worlds/ '
+                              '(square_dynamic, square_dense_dynamic_14, '
+                              'corridor_dynamic_9, floorplan1_dynamic_16)'),
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument('publish_ground_truth', default_value='false',
                               description='Start ground_truth_publisher node'),

@@ -57,7 +57,7 @@ install(TARGETS obstacle_path_plugin ground_truth_publisher
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
-install(DIRECTORY launch worlds models urdf config
+install(DIRECTORY launch worlds models urdf
   DESTINATION share/${PROJECT_NAME}
 )
 
