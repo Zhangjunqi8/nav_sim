@@ -2,7 +2,7 @@
 
 **Stack-agnostic 2D ground-robot simulation platform for dynamic-obstacle navigation.**
 
-Ported from [Intent-MPC](https://github.com/Zhefan-Xu/Intent-MPC) `uav_simulator` (MIT), stripped of all UAV/PX4/livox pieces and re-targeted at differential-drive AGVs in 2D.
+A personal project: a lightweight simulation platform that provides a differential-drive AGV, lidar / RGB-D sensors, and path-following dynamic obstacles in 2D scenes, so that any navigation stack can be validated against moving obstacles.
 
 ## Why separate from your navigation stack
 
@@ -16,9 +16,10 @@ Ported from [Intent-MPC](https://github.com/Zhefan-Xu/Intent-MPC) `uav_simulator
 |---|---|
 | Dynamic obstacles | obstacle_path_plugin: waypoint paths, velocity, loop / back-and-forth, sin (least-squares polynomial) motion |
 | AGV model | Differential drive, 2D lidar (/scan), RGB-D camera (/camera/depth|color/*), TF + odom |
-| Scenes | square_dynamic.world (walls + static box + 3 walking persons), extendable from Intent-MPC worlds |
+| Scenes | square_dynamic.world (walls + static box + 3 walking persons), extendable with more worlds |
 | Ground truth | ground_truth_publisher: /model_states -> ground-truth detections + poses |
 | No lock-in | Only standard ROS2 messages; no custom msg/srv, no nav-stack include |
+
 ## Interface contract (what any navigation stack sees)
 
 ```
@@ -66,7 +67,7 @@ Then start your navigation stack's bringup (it includes sim.launch.py via Includ
 
 ## Adding a new scene
 
-Copy an Intent-MPC world from worlds/ (they are already 2D floor plans + people), drop the UAV-only models, add libobstacle_path_plugin.so to each moving model:
+Create a world under worlds/ (2D floor plans + people), drop the UAV-only models, add libobstacle_path_plugin.so to each moving model:
 
 ```xml
 <plugin name="obstacle_motion" filename="libobstacle_path_plugin.so">
@@ -81,4 +82,4 @@ Copy an Intent-MPC world from worlds/ (they are already 2D floor plans + people)
 
 ## License
 
-Ported plugin retains MIT (Intent-MPC / CMU CERLAB). This package: MIT.
+MIT.
