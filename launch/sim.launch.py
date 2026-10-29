@@ -48,6 +48,9 @@ def generate_launch_description():
                               description='Start ground_truth_publisher node'),
         DeclareLaunchArgument('rviz', default_value='false',
                               description='Open rviz with nav_sim config'),
+        DeclareLaunchArgument('gui', default_value='true',
+                              description='Open the Gazebo client GUI (false = headless; '
+                              'gzserver still renders camera sensors)'),
         DeclareLaunchArgument('spawn_x', default_value='0.0',
                               description='AGV spawn x in world frame'),
         DeclareLaunchArgument('spawn_y', default_value='0.0',
@@ -64,6 +67,7 @@ def generate_launch_description():
             launch_arguments={
                 'world': PathJoinSubstitution([nav_sim_share, 'worlds', LaunchConfiguration('world')]),
                 'verbose': 'true',
+                'gui': LaunchConfiguration('gui'),
             }.items()
         ),
 

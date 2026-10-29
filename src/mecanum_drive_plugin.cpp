@@ -44,6 +44,13 @@ namespace gazebo
     if (_sdf->HasElement("robot_base_frame")) {
       robot_base_frame_ = _sdf->Get<std::string>("robot_base_frame");
     }
+    if (_sdf->HasElement("publish_rate")) {
+      publish_rate_ = _sdf->Get<double>("publish_rate");
+    }
+    if (publish_rate_ < 1.0) {
+      publish_rate_ = 1.0;
+    }
+    publish_period_ = 1.0 / publish_rate_;
 
     // ROS 2 node (gazebo_ros) — same mechanism as libgazebo_ros_diff_drive
     ros_node_ = gazebo_ros::Node::Get(_sdf);
@@ -57,6 +64,7 @@ namespace gazebo
     pose_ = model_->WorldPose();
     yaw_ = pose_.Rot().Yaw();
     last_update_ = model_->GetWorld()->SimTime();
+    last_publish_ = last_update_;
 
     update_connection_ = event::Events::ConnectWorldUpdateBegin(
       std::bind(&MecanumDrivePlugin::OnUpdate, this));
@@ -66,6 +74,13 @@ namespace gazebo
 
   void MecanumDrivePlugin::OnTwist(const geometry_msgs::msg::Twist::SharedPtr msg)
   {
+    // A non-finite command (e.g. a controller that failed mid-cycle) must not
+    // poison the wheel joints; drop it and keep the previous command.
+    if (!std::isfinite(msg->linear.x) || !std::isfinite(msg->linear.y) ||
+      !std::isfinite(msg->angular.z))
+    {
+      return;
+    }
     vx_ = msg->linear.x;
     vy_ = msg->linear.y;
     wz_ = msg->angular.z;
@@ -74,11 +89,12 @@ namespace gazebo
 
   void MecanumDrivePlugin::OnUpdate()
   {
+    const auto finite_or_zero = [](double v) {return std::isfinite(v) ? v : 0.0;};
     const double sum = half_wheelbase_ + half_track_;
-    const double w_fl = ( vx_ - vy_ - sum * wz_) / wheel_radius_;
-    const double w_fr = ( vx_ + vy_ + sum * wz_) / wheel_radius_;
-    const double w_rl = ( vx_ + vy_ - sum * wz_) / wheel_radius_;
-    const double w_rr = ( vx_ - vy_ + sum * wz_) / wheel_radius_;
+    const double w_fl = finite_or_zero(( vx_ - vy_ - sum * wz_) / wheel_radius_);
+    const double w_fr = finite_or_zero(( vx_ + vy_ + sum * wz_) / wheel_radius_);
+    const double w_rl = finite_or_zero(( vx_ + vy_ - sum * wz_) / wheel_radius_);
+    const double w_rr = finite_or_zero(( vx_ - vy_ + sum * wz_) / wheel_radius_);
 
     // Velocity target + torque *limit* (Gazebo velocity motor idiom).
     // SetForce() would apply a constant torque every step and drive the robot
@@ -94,7 +110,13 @@ namespace gazebo
 
     // Odometry source = Gazebo model true world pose (ground truth in sim).
     // Exact for navigation validation; wheel command is still applied above.
+    // Throttle ROS outputs to publish_rate_. Physics/wheel control still runs
+    // at the full step rate; only odom + TF are rate-limited.
     const common::Time now = model_->GetWorld()->SimTime();
+    if ((now - last_publish_).Double() < publish_period_) {
+      return;
+    }
+    last_publish_ = now;
     pose_ = model_->WorldPose();
     yaw_ = pose_.Rot().Yaw();
     last_update_ = now;
@@ -112,12 +134,15 @@ namespace gazebo
     odom.pose.pose.orientation.z = pose_.Rot().Z();
     odom.pose.pose.orientation.w = pose_.Rot().W();
     // Twist in the robot frame (REP-145): rotate world velocity by -yaw.
+    // Guard against non-finite physics velocities (hard contacts) so a bad
+    // odom twist cannot make the MPPI optimizer fail.
+    const auto safe = [](double v) {return std::isfinite(v) ? v : 0.0;};
     const ignition::math::Vector3d vel_world = model_->WorldLinearVel();
     const double c = std::cos(yaw_);
     const double s = std::sin(yaw_);
-    odom.twist.twist.linear.x = c * vel_world.X() + s * vel_world.Y();
-    odom.twist.twist.linear.y = -s * vel_world.X() + c * vel_world.Y();
-    odom.twist.twist.angular.z = model_->WorldAngularVel().Z();
+    odom.twist.twist.linear.x = safe(c * vel_world.X() + s * vel_world.Y());
+    odom.twist.twist.linear.y = safe(-s * vel_world.X() + c * vel_world.Y());
+    odom.twist.twist.angular.z = safe(model_->WorldAngularVel().Z());
     odom_pub_->publish(odom);
 
     // Publish odom -> base_link TF

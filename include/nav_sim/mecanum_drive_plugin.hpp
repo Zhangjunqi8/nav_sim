@@ -52,6 +52,12 @@ namespace gazebo
     std::string odom_frame_{"odom"};
     std::string robot_base_frame_{"base_link"};
 
+    // OnUpdate runs at the physics rate (1 kHz). Publishing odom/TF on every
+    // step floods DDS (measured ~500 Hz odom / ~800 Hz tf) and starves Nav2.
+    // Wheel commands still run every step; only the ROS outputs are throttled.
+    double publish_rate_{50.0};
+    double publish_period_{0.02};
+
     double vx_{0.0}, vy_{0.0}, wz_{0.0};
     bool command_received_{false};
 
@@ -59,6 +65,7 @@ namespace gazebo
     double yaw_{0.0};
     ignition::math::Vector3d lin_vel_world_;
     common::Time last_update_;
+    common::Time last_publish_;
   };
 
   GZ_REGISTER_MODEL_PLUGIN(MecanumDrivePlugin)
