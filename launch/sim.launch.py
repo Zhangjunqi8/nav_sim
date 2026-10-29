@@ -16,6 +16,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
+from launch_ros.descriptions import ParameterValue
 from launch.actions import SetEnvironmentVariable
 from ament_index_python.packages import get_package_share_directory
 
@@ -23,12 +24,18 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
     nav_sim_share = FindPackageShare('nav_sim')
     agv_xacro = PathJoinSubstitution([nav_sim_share, 'urdf', 'agv', 'agv.urdf.xacro'])
+    nav_sim_rviz = PathJoinSubstitution([nav_sim_share, 'rviz', 'nav_sim.rviz'])
 
     # Person / corridor / floorplan models are referenced via model:// URIs inside
-    # the worlds. Expose nav_sim/models to Gazebo without clobbering system defaults.
+    # the worlds. APPEND nav_sim/models to GAZEBO_MODEL_PATH, never overwrite:
+    # the system model database (/usr/share/gazebo-11/models: ground_plane, sun)
+    # must stay available or the world fails to load.
     _models_dir = os.path.join(get_package_share_directory('nav_sim'), 'models')
     _gmp = os.environ.get('GAZEBO_MODEL_PATH', '')
-    _gmp = (_gmp + ':' + _models_dir) if _gmp else _models_dir
+    if _gmp:
+        _gmp = _gmp + ':' + _models_dir
+    else:
+        _gmp = _models_dir + ':' + '/usr/share/gazebo-11/models'
     return LaunchDescription([
         SetEnvironmentVariable('GAZEBO_MODEL_PATH', _gmp),
 
@@ -41,6 +48,10 @@ def generate_launch_description():
                               description='Start ground_truth_publisher node'),
         DeclareLaunchArgument('rviz', default_value='false',
                               description='Open rviz with nav_sim config'),
+        DeclareLaunchArgument('spawn_x', default_value='0.0',
+                              description='AGV spawn x in world frame'),
+        DeclareLaunchArgument('spawn_y', default_value='0.0',
+                              description='AGV spawn y in world frame'),
 
         # ---- 1. Gazebo with the world (dynamic obstacles spawn with it) ----
         IncludeLaunchDescription(
@@ -63,7 +74,7 @@ def generate_launch_description():
             name='robot_state_publisher',
             output='screen',
             parameters=[{
-                'robot_description': Command(['xacro ', agv_xacro]),
+                'robot_description': ParameterValue(Command(['xacro ', agv_xacro]), value_type=str),
                 'use_sim_time': LaunchConfiguration('use_sim_time'),
             }]
         ),
@@ -75,7 +86,9 @@ def generate_launch_description():
             arguments=[
                 '-topic', 'robot_description',
                 '-entity', 'agv',
-                '-x', '0.0', '-y', '0.0', '-z', '0.05',
+                '-x', LaunchConfiguration('spawn_x'),
+                '-y', LaunchConfiguration('spawn_y'),
+                '-z', '0.15',
             ],
             output='screen'
         ),
@@ -87,5 +100,15 @@ def generate_launch_description():
             name='ground_truth_publisher',
             output='screen',
             condition=IfCondition(LaunchConfiguration('publish_ground_truth'))
+        ),
+
+        # ---- 5. RViz (optional) ----
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            arguments=['-d', nav_sim_rviz],
+            output='screen',
+            condition=IfCondition(LaunchConfiguration('rviz'))
         ),
     ])

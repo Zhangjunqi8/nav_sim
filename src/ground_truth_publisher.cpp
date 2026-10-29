@@ -67,8 +67,8 @@ private:
       // ground-truth detection (2D box with identity hypothesis)
       vision_msgs::msg::Detection2D det;
       det.header = dets.header;
-      det.bbox.center.x = pose.position.x;
-      det.bbox.center.y = pose.position.y;
+      det.bbox.center.position.x = pose.position.x;
+      det.bbox.center.position.y = pose.position.y;
       det.bbox.size_x = 0.5;
       det.bbox.size_y = 0.5;
       vision_msgs::msg::ObjectHypothesisWithPose hyp;

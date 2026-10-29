@@ -12,6 +12,7 @@ find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(gazebo_msgs REQUIRED)
@@ -38,6 +39,29 @@ ament_target_dependencies(obstacle_path_plugin
 )
 target_compile_features(obstacle_path_plugin PUBLIC cxx_std_17)
 
+# ---- Mecanum 4-wheel drive plugin (cmd_vel -> 4 wheel speeds + odom) ----
+add_library(mecanum_drive_plugin SHARED
+  src/mecanum_drive_plugin.cpp
+)
+target_include_directories(mecanum_drive_plugin PUBLIC
+  include
+)
+target_link_libraries(mecanum_drive_plugin
+  ${GAZEBO_LIBRARIES}
+  Eigen3::Eigen
+)
+ament_target_dependencies(mecanum_drive_plugin
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  std_msgs
+  gazebo_ros
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+target_compile_features(mecanum_drive_plugin PUBLIC cxx_std_17)
+
 # ---- Ground-truth publisher (/model_states -> /dynamic_obstacles/ground_truth) ----
 add_executable(ground_truth_publisher
   src/ground_truth_publisher.cpp
@@ -48,16 +72,17 @@ ament_target_dependencies(ground_truth_publisher
   nav_msgs
   std_msgs
   gazebo_msgs
+  vision_msgs
 )
 target_compile_features(ground_truth_publisher PUBLIC cxx_std_17)
 
 # ---- Install ----
-install(TARGETS obstacle_path_plugin ground_truth_publisher
+install(TARGETS obstacle_path_plugin mecanum_drive_plugin ground_truth_publisher
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
-install(DIRECTORY launch worlds models urdf
+install(DIRECTORY launch worlds models urdf rviz
   DESTINATION share/${PROJECT_NAME}
 )
 
