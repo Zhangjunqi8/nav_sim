@@ -5,7 +5,7 @@
   <version>0.1.0</version>
   <description>
     Stack-agnostic 2D ground-robot simulation platform for dynamic-obstacle navigation.
-    Provides a differential-drive AGV, depth/lidar sensors, and path-following dynamic
+    Provides a planar omnidirectional AGV, depth/lidar sensors, and path-following dynamic
     obstacles (ported from Intent-MPC's uav_simulator). Publishes only standard ROS2
     interfaces so any navigation stack can consume it.
   </description>
@@ -33,6 +33,11 @@
   <depend>xacro</depend>
   <depend>robot_state_publisher</depend>
   <depend>joint_state_publisher</depend>
+
+  <test_depend>rclpy</test_depend>
+  <test_depend>rosgraph_msgs</test_depend>
+  <test_depend>std_srvs</test_depend>
+  <test_depend>tf2_msgs</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

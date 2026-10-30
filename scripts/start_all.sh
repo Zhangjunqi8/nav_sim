@@ -16,7 +16,7 @@
 #
 # Usage:
 #   ./start_all.sh start [options]
-#   ./start_all.sh stop
+#   ./start_all.sh stop        (delegates to stop_all.sh)
 #   ./start_all.sh status
 #
 # Start options:
@@ -25,9 +25,8 @@
 #   --spawn X,Y          AGV spawn in world frame (default depends on world)
 #   --map NAME|PATH      map yaml (default depends on world)
 #   --goal X,Y[,YAW]     optional NavigateToPose goal, sent after ready
-#   --robot-version V    v0_1/v0_2/v0_3 (default v0_2: the sim's working
-#                        velocity chain; v0_3's stamped chain does not run on
-#                        this Humble nav2 build)
+#   --robot-version V    v0_1/v0_2/v0_3 (default v0_3: boost + approach limiter
+#                        with Humble Twist adapters; v0_2 bypasses this chain)
 #   --nav-mode M         ekf_odom/wheel_odom (default wheel_odom)
 #   --gui                open the Gazebo client window (default: on)
 #   --rviz               open RViz with the Nav2 config (default: on)
@@ -49,13 +48,14 @@
 #
 # Notes:
 # - Map->odom is published as identity. That is valid in this sim because the
-#   mecanum plugin's odom is the world pose and both maps use world
+#   planar drive plugin's odom is the world pose and both maps use world
 #   coordinates. Do not reuse this script on a real robot.
 # - Logs live inside the container: /tmp/sim.log, /tmp/nav.log,
 #   /tmp/static_tf.log, /tmp/goal.log.
 #
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONTAINER="${CONTAINER:-nav_sim_full}"
 DOMAIN="${NAV_SIM_DOMAIN:-42}"
 NAV_MAP_DIR="/workspace/src/hanmole_navigation/maps"
@@ -65,7 +65,7 @@ WORLD="generated_env_ground_14.world"
 SPAWN_SPEC=""
 MAP=""
 GOAL=""
-ROBOT_VERSION="v0_2"
+ROBOT_VERSION="v0_3"
 NAV_MODE="wheel_odom"
 GUI="true"
 RVIZ="true"
@@ -105,22 +105,7 @@ refresh_xauth() {
 }
 
 stop_all() {
-  dex "
-    pkill -9 -f '[g]zserver' || true
-    pkill -9 -f '[g]zclient' || true
-    pkill -9 -f '[r]obot_state_publisher' || true
-    pkill -9 -f '[s]pawn_entity' || true
-    pkill -9 -f '[i]ntent_2d_bridge_node' || true
-    pkill -9 -f '[i]ntent_reference_node' || true
-    pkill -9 -f '[c]md_vel_type_adapter_node' || true
-    pkill -9 -f '[c]omponent_container_isolated' || true
-    pkill -9 -f '[n]av2_container' || true
-    pkill -9 -f '[s]tatic_transform_publisher' || true
-    pkill -9 -f '[r]viz2' || true
-    pkill -9 -f '[r]os2 launch' || true
-    pkill -9 -f '[r]os2 run' || true
-    sleep 1
-    true"
+  CONTAINER="$CONTAINER" bash "$SCRIPT_DIR/stop_all.sh"
 }
 
 wait_camera() {
@@ -222,7 +207,7 @@ send_goal() {
   IFS=',' read -r gx gy yaw <<< "$spec"
   gy="${gy:-5.0}"
   yaw="${yaw:-0.0}"
-  read -r qz qw < <(awk -v y="$yaw" 'BEGIN{printf "%.9f %.9f", sin(y/2.0), cos(y/2.0)}')
+  read -r qz qw < <(awk -v y="$yaw" 'BEGIN{printf "%.9f %.9f\n", sin(y/2.0), cos(y/2.0)}')
   info "goal: x=$gx y=$gy yaw=$yaw"
   dex_bg "
     source /opt/ros/humble/setup.bash

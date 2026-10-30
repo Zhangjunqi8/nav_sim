@@ -62,6 +62,25 @@ ament_target_dependencies(mecanum_drive_plugin
 )
 target_compile_features(mecanum_drive_plugin PUBLIC cxx_std_17)
 
+# ---- Planar drive for the rigid navigation AGV ----
+add_library(planar_drive_plugin SHARED
+  src/planar_drive_plugin.cpp
+)
+target_include_directories(planar_drive_plugin PUBLIC
+  include
+)
+target_link_libraries(planar_drive_plugin
+  ${GAZEBO_LIBRARIES}
+)
+ament_target_dependencies(planar_drive_plugin
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  gazebo_ros
+  tf2_ros
+)
+target_compile_features(planar_drive_plugin PUBLIC cxx_std_17)
+
 # ---- Ground-truth publisher (/model_states -> /dynamic_obstacles/ground_truth) ----
 add_executable(ground_truth_publisher
   src/ground_truth_publisher.cpp
@@ -77,13 +96,16 @@ ament_target_dependencies(ground_truth_publisher
 target_compile_features(ground_truth_publisher PUBLIC cxx_std_17)
 
 # ---- Install ----
-install(TARGETS obstacle_path_plugin mecanum_drive_plugin ground_truth_publisher
+install(TARGETS obstacle_path_plugin mecanum_drive_plugin planar_drive_plugin ground_truth_publisher
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 install(DIRECTORY launch worlds models urdf rviz
   DESTINATION share/${PROJECT_NAME}
+)
+install(PROGRAMS test/planar_drive_test.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_package()
